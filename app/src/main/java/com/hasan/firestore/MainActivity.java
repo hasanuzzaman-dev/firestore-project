@@ -4,13 +4,16 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.HashMap;
@@ -23,8 +26,9 @@ public class MainActivity extends AppCompatActivity {
     public static final String KEY_DESCRIPTION = "description";
 
     private EditText titleET, descriptionET;
+    private TextView textViewData;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
-
+    private DocumentReference noteRef = db.document("Notebook/My First Note");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,8 +37,10 @@ public class MainActivity extends AppCompatActivity {
 
         titleET = findViewById(R.id.title_ET);
         descriptionET = findViewById(R.id.description_ET);
+        textViewData = findViewById(R.id.loadNoteTV);
     }
 
+    // Save data to Firestore
     public void saveNote(View view) {
 
         String title = titleET.getText().toString();
@@ -44,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
         note.put(KEY_TITLE, title);
         note.put(KEY_DESCRIPTION, description);
 
-        db.collection("Notebook").document("My First Note").set(note)
+        noteRef.set(note)
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
@@ -59,6 +65,30 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    // Retrieve Data from Firestore
     public void loadNote(View view) {
+
+        noteRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+            @Override
+            public void onSuccess(DocumentSnapshot documentSnapshot) {
+                
+                if (documentSnapshot.exists()){
+                    String title = documentSnapshot.getString(KEY_TITLE);
+                    String description = documentSnapshot.getString(KEY_DESCRIPTION);
+
+                    textViewData.setText("Title: "+title +"\n" + "Description: "+description);
+                }else {
+                    Toast.makeText(MainActivity.this, "Document doesn't exists!", Toast.LENGTH_SHORT).show();
+                }
+
+            }
+        }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+
+                Log.e(TAG, "onFailure: ", e.getCause());
+
+            }
+        });
     }
 }
